@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "date": "2026-05-07",
+    "condition": "New Setup",
+    "model_change_from": "S201",
+    "model_to": "S215",
+    "shift": "A"
+  },
+  "sections": [
+    {
+      "title": "OFFLINE ACTIVITY Please write 'OK' after the completion of each activity",
+      "items": [
+        {
+          "id": "activity_01",
+          "value": "OK"
+        },
+        {
+          "id": "activity_02",
+          "value": "OK"
+        },
+        {
+          "id": "activity_03",
+          "value": "OK"
+        }
+      ]
+    },
+    {
+      "title": "ON LINE ACTIVITY Please write 'OK' after the completion of each activity",
+      "items": [
+        {
+          "id": "activity_04",
+          "value": "OK"
+        },
+        {
+          "id": "activity_05",
+          "value": "OK"
+        },
+        {
+          "id": "activity_06",
+          "value": "OK"
+        },
+        {
+          "id": "activity_07",
+          "value": "OK"
+        },
+        {
+          "id": "activity_08",
+          "value": "OK"
+        },
+        {
+          "id": "activity_09",
+          "value": "OK"
+        },
+        {
+          "id": "activity_10",
+          "value": "OK"
+        }
+      ]
+    },
+    {
+      "title": "OFFLINE ACTIVITY Please write 'OK' after the completion of each activity",
+      "items": [
+        {
+          "id": "activity_11",
+          "value": "OK"
+        },
+        {
+          "id": "activity_12",
+          "value": "OK"
+        },
+        {
+          "id": "activity_13",
+          "value": "OK"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "set_up_start_time": "2026-05-07 08:00",
+    "set_up_end_time": "2026-05-07 09:30",
+    "total_set_up_time": "1.5",
+    "set_up_done_by": "John Operator",
+    "set_up_done_by_oe": "John Operator (OP001)",
+    "submit_time": "2026-05-07 09:35:00",
+    "verify_status": "Pending"
+  }
+}

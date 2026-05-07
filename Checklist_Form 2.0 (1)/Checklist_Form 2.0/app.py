@@ -28,9 +28,19 @@ CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5000"])
 WORKBOOK_MAP = {
     "fms": "FMS.xlsx",
     "fms_checklist": "FMS.xlsx",
+    "7_fms": "FMS.xlsx",
     "fan_motor_assembly_balancing": "FanMotorAB.xlsx",
+    "5_fan_motor_assembly": "FanMotorAB.xlsx",
     "leak_testing": "LeakTesting.xlsx",
+    "2_dlt": "LeakTesting.xlsx",
     "module_assembly_testing": "ModuleAssembly.xlsx",
+    "3_module_assly": "ModuleAssembly.xlsx",
+    "wheel_crimping": "Wheel crimping.xlsx",
+    "1_ep6_crimping_startup": "1. EP6 CRIMPING STARTUP.xlsx",
+    "1b_clinching": "1B. CLINCHING.xlsx",
+    "4_ep6_final_testing_startup": "4. EP6 FINAL TESTING STARTUP.xlsx",
+    "6_balancing": "6. BALANCING.xlsx",
+    "8_ep6_firewall_startup": "8. EP6 FIREWALL STARTUP.xlsx",
 }
 
 # Compatibility fix for older Werkzeug versions
@@ -360,6 +370,21 @@ def save_checklist(slug: str):
     if not payload:
         return jsonify({"error": "Invalid JSON payload"}), 400
 
+    operator_name = session.get("user", {}).get("name", "Unknown")
+    operator_id = session.get("user", {}).get("employee_id", "Unknown")
+    submit_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    if "summary" not in payload:
+        payload["summary"] = {}
+    
+    payload["summary"]["set_up_done_by"] = operator_name
+    payload["summary"]["set_up_done_by_oe"] = f"{operator_name} ({operator_id})"
+    payload["summary"]["submit_time"] = submit_time
+    payload["summary"]["verify_status"] = "Pending"
+
+    if "metadata" in payload and not payload["metadata"].get("date"):
+        payload["metadata"]["date"] = datetime.now().strftime("%Y-%m-%d")
+
     cat_slug = category_slug(entry.get("category", "General Checklist"))
     checklist_dir = SUBMISSION_DIR / cat_slug / slug
     checklist_dir.mkdir(parents=True, exist_ok=True)
@@ -463,7 +488,7 @@ def approve_checklist():
     data = request.json or {}
     batch = data.get("batch_id")
     seq = data.get("sequence")
-    approver = data.get("approver")
+    approver = session.get("user", {}).get("name", data.get("approver", "Supervisor"))
     slug = data.get("slug")
 
     template_name = WORKBOOK_MAP.get(slug, "FMS.xlsx")

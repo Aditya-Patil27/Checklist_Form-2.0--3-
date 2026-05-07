@@ -16,9 +16,20 @@ ACTIVE_DIR = BASE_DIR / "data" / "active"
 # Workbook Registry - Must match app.py and excel_maps.py slugs
 WORKBOOK_MAP = {
     "fms": "FMS.xlsx",
+    "fms_checklist": "FMS.xlsx",
+    "7_fms": "FMS.xlsx",
     "fan_motor_assembly_balancing": "FanMotorAB.xlsx",
+    "5_fan_motor_assembly": "FanMotorAB.xlsx",
     "leak_testing": "LeakTesting.xlsx",
-    "module_assembly_testing": "ModuleAssembly.xlsx"
+    "2_dlt": "LeakTesting.xlsx",
+    "module_assembly_testing": "ModuleAssembly.xlsx",
+    "3_module_assly": "ModuleAssembly.xlsx",
+    "wheel_crimping": "Wheel crimping.xlsx",
+    "1_ep6_crimping_startup": "1. EP6 CRIMPING STARTUP.xlsx",
+    "1b_clinching": "1B. CLINCHING.xlsx",
+    "4_ep6_final_testing_startup": "4. EP6 FINAL TESTING STARTUP.xlsx",
+    "6_balancing": "6. BALANCING.xlsx",
+    "8_ep6_firewall_startup": "8. EP6 FIREWALL STARTUP.xlsx",
 }
 
 def process_submission_to_excel(relative_json_path):
@@ -84,9 +95,15 @@ def process_submission_to_excel(relative_json_path):
     # 6. WRITE DATA HELPER
     def write_to_excel(data_dict):
         for field_id, value in data_dict.items():
-            # Uses the hardcoded mapping in excel_maps.py
             cell = get_cell_address(checklist_slug, str(seq), field_id)
             if cell:
+                cell_obj = ws[cell]
+                if hasattr(cell_obj, 'coordinate'):
+                    for merged_range in ws.merged_cells.ranges:
+                        if cell in merged_range:
+                            from openpyxl.utils import get_column_letter
+                            cell = f"{get_column_letter(merged_range.min_col)}{merged_range.min_row}"
+                            break
                 ws[cell] = str(value)
                 ws[cell].alignment = Alignment(horizontal='center', vertical='center')
 
@@ -123,15 +140,24 @@ def add_supervisor_approval(batch_id, sequence, approver_name, checklist_slug, t
         
         approval_time = datetime.now().strftime("%Y-%m-%d %H:%M")
         
-        # Ensure these IDs match your excel_maps.py Row Maps
         approvals = {
             "set_up_approved_by_cc": approver_name,
-            "set_up_approved_time": approval_time
+            "set_up_approved_time": approval_time,
+            "verify_status": "Verified",
+            "verified_by": approver_name,
+            "verified_time": approval_time
         }
 
         for field_id, value in approvals.items():
             cell = get_cell_address(checklist_slug, str(sequence), field_id)
             if cell:
+                cell_obj = ws[cell]
+                if hasattr(cell_obj, 'coordinate'):
+                    for merged_range in ws.merged_cells.ranges:
+                        if cell in merged_range:
+                            from openpyxl.utils import get_column_letter
+                            cell = f"{get_column_letter(merged_range.min_col)}{merged_range.min_row}"
+                            break
                 ws[cell] = str(value)
                 ws[cell].alignment = Alignment(horizontal='center', vertical='center')
 
