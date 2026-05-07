@@ -142,10 +142,7 @@ def add_supervisor_approval(batch_id, sequence, approver_name, checklist_slug, t
         
         approvals = {
             "set_up_approved_by_cc": approver_name,
-            "set_up_approved_time": approval_time,
-            "verify_status": "Verified",
-            "verified_by": approver_name,
-            "verified_time": approval_time
+            "set_up_approved_time": approval_time
         }
 
         for field_id, value in approvals.items():
@@ -168,3 +165,52 @@ def add_supervisor_approval(batch_id, sequence, approver_name, checklist_slug, t
         return "Error: Close the Excel file before approving!"
     except Exception as e:
         return f"Error: {str(e)}"
+
+
+def get_excel_preview(batch_id, slug):
+    """Get Excel preview data for supervisor review."""
+    from excel_maps import get_cell_address
+    from openpyxl.styles import Alignment
+    
+    WORKBOOK_MAP = {
+        "fms": "FMS.xlsx",
+        "fms_checklist": "FMS.xlsx",
+        "7_fms": "FMS.xlsx",
+        "fan_motor_assembly_balancing": "FanMotorAB.xlsx",
+        "5_fan_motor_assembly": "FanMotorAB.xlsx",
+        "leak_testing": "LeakTesting.xlsx",
+        "2_dlt": "LeakTesting.xlsx",
+        "module_assembly_testing": "ModuleAssembly.xlsx",
+        "3_module_assly": "ModuleAssembly.xlsx",
+    }
+    
+    template_name = WORKBOOK_MAP.get(slug, "FMS.xlsx")
+    active_file = ACTIVE_DIR / f"{batch_id}_{template_name}"
+    
+    if not active_file.exists():
+        # Try searching
+        if ACTIVE_DIR.exists():
+            for f in os.listdir(ACTIVE_DIR):
+                if f.startswith(batch_id) and f.endswith(".xlsx"):
+                    active_file = ACTIVE_DIR / f
+                    break
+    
+    if not active_file.exists():
+        return None
+    
+    try:
+        wb = openpyxl.load_workbook(active_file, data_only=True)
+        ws = wb.active
+        
+        preview_data = []
+        for r_idx in range(1, 65):
+            row_cells = []
+            for c_idx in range(1, 15):
+                val = ws.cell(row=r_idx, column=c_idx).value
+                row_cells.append(str(val) if val is not None else "")
+            preview_data.append({"index": r_idx, "cells": row_cells})
+        
+        return {"batch": batch_id, "rows": preview_data, "slug": slug}
+    
+    except Exception as e:
+        raise Exception(f"Excel Error: {str(e)}")

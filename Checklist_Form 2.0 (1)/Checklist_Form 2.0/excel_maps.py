@@ -36,8 +36,7 @@ FMS_ROW_MAP = {
     "activity_07": 15, "activity_08": 16, "activity_09": 17, "activity_10": 18,
     "activity_11": 20, "activity_12": 21, "activity_13": 22,
     "set_up_start_time": 23, "set_up_end_time": 24, "total_set_up_time": 25,
-    "set_up_done_by": 26, "set_up_done_by_oe": 26, "set_up_approved_by_cc": 27, "set_up_approved_time": 28,
-    "verify_status": 29, "verified_by": 30, "verified_time": 31
+    "set_up_done_by": 26, "set_up_done_by_oe": 26, "set_up_approved_by_cc": 27, "set_up_approved_time": 28
 }
 
 FAN_MOTOR_MAP = {
@@ -47,8 +46,7 @@ FAN_MOTOR_MAP = {
     "activity_09": 17, "activity_10": 18, "activity_11": 19, "activity_12": 20,
     "activity_13": 22, "activity_14": 23, "activity_15": 24,
     "set_up_start_time": 25, "set_up_end_time": 26, "total_set_up_time": 27,
-    "set_up_done_by": 28, "set_up_done_by_oe": 28, "set_up_approved_by_cc": 29, "set_up_approved_time": 30,
-    "verify_status": 31, "verified_by": 32, "verified_time": 33
+    "set_up_done_by": 28, "set_up_done_by_oe": 28, "set_up_approved_by_cc": 29, "set_up_approved_time": 30
 }
 
 LEAK_TESTING_MAP = {
@@ -58,8 +56,7 @@ LEAK_TESTING_MAP = {
     "activity_08": 16, "activity_09": 17, "activity_10": 18, "activity_11": 19, "activity_12": 20,
     "activity_13": 22, "activity_14": 23, "activity_15": 24,
     "set_up_start_time": 25, "set_up_end_time": 26, "total_set_up_time": 27,
-    "set_up_done_by": 28, "set_up_done_by_oe": 28, "set_up_approved_by_cc": 29, "set_up_approved_time": 30,
-    "verify_status": 31, "verified_by": 32, "verified_time": 33
+    "set_up_done_by": 28, "set_up_done_by_oe": 28, "set_up_approved_by_cc": 29, "set_up_approved_time": 30
 }
 
 MODULE_ASSY_MAP = {
@@ -69,8 +66,7 @@ MODULE_ASSY_MAP = {
     "activity_09": 17, "activity_10": 18, "activity_11": 19, "activity_12": 20,
     "activity_13": 22, "activity_14": 23, "activity_15": 24,
     "set_up_start_time": 25, "set_up_end_time": 26, "total_set_up_time": 27,
-    "set_up_done_by": 28, "set_up_done_by_oe": 28, "set_up_approved_by_cc": 29, "set_up_approved_time": 30,
-    "verify_status": 31, "verified_by": 32, "verified_time": 33
+    "set_up_done_by": 28, "set_up_done_by_oe": 28, "set_up_approved_by_cc": 29, "set_up_approved_time": 30
 }
 
 
