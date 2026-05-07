@@ -15,6 +15,13 @@ class Config:
     ACTIVE_DIR = BASE_DIR / "data" / "active"
     USERS_FILE = BASE_DIR / "users.json"
     
+    # Database
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        "DATABASE_URL",
+        "mysql+pymysql://root:password@localhost/mahle_db"
+    )
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
     # Security
     BCRYPT_ROUNDS = 12
     SESSION_COOKIE_SECURE = False  # Set True in production

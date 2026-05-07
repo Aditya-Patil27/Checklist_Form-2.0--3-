@@ -57,14 +57,20 @@ class UserService:
         """Invalidate users cache."""
         self._users_cache = None
     
-    def authenticate(self, employee_id: str, password: str) -> Optional[dict]:
-        """Authenticate user with employee_id and password."""
+    def authenticate(self, employee_id: str, password: str, machine_id: str = None) -> Optional[dict]:
+        """Authenticate user with employee_id, password, and optionally machine_id."""
         if not employee_id or not password:
             return None
-        
+         
         users = self._load_users()
         for user in users:
             if user.get("employee_id") == employee_id:
+                # Check machine_id if provided in user data
+                if machine_id is not None:
+                    user_machine_id = user.get("machine_id")
+                    if user_machine_id is not None and user_machine_id != machine_id:
+                        continue
+                
                 stored_hash = user.get("password_hash") or user.get("password")
                 if self._bcrypt.check_password_hash(stored_hash, password):
                     return self._serialize_user(user)

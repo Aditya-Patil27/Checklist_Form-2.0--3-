@@ -69,9 +69,15 @@
     </div>
     <div class="form-row">
       <div class="form-group">
+        <label class="form-label">Machine ID</label>
+        <input class="form-input" id="machine-id" type="text" placeholder="e.g., MACH001">
+      </div>
+      <div class="form-group">
         <label class="form-label">Password</label>
         <input class="form-input" id="password" type="password" placeholder="Create a secure password">
       </div>
+    </div>
+    <div class="form-row">
       <div class="form-group">
         <label class="form-label">Role</label>
         <select class="form-select" id="role">
@@ -122,6 +128,7 @@
   async function doRegister() {
     const name     = document.getElementById('name').value.trim();
     const empId    = document.getElementById('emp-id').value.trim();
+    const machineId = document.getElementById('machine-id').value.trim();
     const password = document.getElementById('password').value;
     const role     = document.getElementById('role').value;
     const btn      = document.getElementById('create-btn');
@@ -132,7 +139,7 @@
 
     hideMessages();
 
-    if (!name || !empId || !password) {
+    if (!name || !empId || !machineId || !password) {
       showError('Please fill in all account fields.');
       return;
     }
@@ -145,7 +152,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name, employee_id: empId, password, role, assigned_checklists })
+        body: JSON.stringify({ name, employee_id: empId, machine_id: machineId, password, role, assigned_checklists })
       });
       const data = await res.json();
 

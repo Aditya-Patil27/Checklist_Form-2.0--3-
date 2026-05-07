@@ -14,6 +14,9 @@ from flask_bcrypt import Bcrypt
 # Import configuration
 from config import get_config
 
+# Import database models
+from models import db
+
 # Import services
 from services import (
     create_user_service,
@@ -47,6 +50,14 @@ def create_app(config_name=None):
     CORS(app, supports_credentials=True, origins=app.config.get("CORS_ORIGINS", ["http://127.0.0.1:5000"]))
     bcrypt = Bcrypt(app)
     
+    # Initialize database
+    db.init_app(app)
+    
+    # Create tables if they don't exist
+    with app.app_context():
+        from models import User, Submission
+        db.create_all()
+    
     # Initialize services
     app.user_service = create_user_service(app.config["USERS_FILE"])
     app.checklist_service = create_checklist_service(
@@ -70,6 +81,35 @@ def create_app(config_name=None):
 
 def register_routes(app, bcrypt):
     """Register all routes."""
+    
+    # ============ DATABASE AUTH ============
+    
+    def db_authenticate(employee_id: str, password: str, machine_id: str = None) -> Optional[dict]:
+        """Authenticate user from MySQL database."""
+        from models import User
+        
+        try:
+            user = User.query.filter_by(employee_id=employee_id).first()
+            if not user:
+                return None
+            
+            # Check machine_id if provided
+            if machine_id and user.machine_id != machine_id:
+                return None
+            
+            # Verify password
+            if bcrypt.check_password_hash(user.password_hash, password):
+                return {
+                    "name": user.name,
+                    "employee_id": user.employee_id,
+                    "machine_id": user.machine_id,
+                    "role": user.role,
+                    "assigned_checklists": json.loads(user.assigned_checklists) if user.assigned_checklists else []
+                }
+            return None
+        except Exception as e:
+            logger.error(f"Database authentication error: {e}")
+            return None
     
     # ============ AUTH DECORATORS ============
     
@@ -102,7 +142,8 @@ def register_routes(app, bcrypt):
             "name": user.get("name"),
             "employee_id": user.get("employee_id"),
             "role": user.get("role"),
-            "assigned_checklists": user.get("assigned_checklists", [])
+            "assigned_checklists": user.get("assigned_checklists", []),
+            "machine_id": user.get("machine_id")
         }
     
     # ============ PAGE ROUTES ============
@@ -116,9 +157,10 @@ def register_routes(app, bcrypt):
         if request.method == "POST":
             data = request.form
             employee_id = data.get("employee_id", "").strip()
+            machine_id = data.get("machine-id", "").strip()
             password = data.get("password", "")
             
-            user = app.user_service.authenticate(employee_id, password)
+            user = db_authenticate(employee_id, password, machine_id if machine_id else None)
             if user:
                 session["user"] = build_user_session(user)
                 role = user.get("role")
@@ -141,14 +183,16 @@ def register_routes(app, bcrypt):
             return jsonify({"error": "Invalid request"}), 400
         
         employee_id = data.get("employee_id", "").strip()
+        machine_id = data.get("machine_id", "").strip()
         password = data.get("password", "")
         
         if not employee_id or not password:
             return jsonify({"error": "Employee ID and password are required"}), 400
         
-        user = app.user_service.authenticate(employee_id, password)
+        # Machine ID is optional for backward compatibility
+        user = db_authenticate(employee_id, password, machine_id if machine_id else None)
         if not user:
-            return jsonify({"error": "Invalid Employee ID or password"}), 401
+            return jsonify({"error": "Invalid Employee ID, Machine ID, or password"}), 401
         
         session["user"] = build_user_session(user)
         
@@ -156,6 +200,7 @@ def register_routes(app, bcrypt):
             "message": "Login successful",
             "name": user.get("name"),
             "employee_id": user.get("employee_id"),
+            "machine_id": user.get("machine_id"),
             "role": user.get("role"),
             "assigned_checklists": user.get("assigned_checklists", [])
         })
@@ -168,54 +213,91 @@ def register_routes(app, bcrypt):
     
     @app.route("/register", methods=["GET", "POST"])
     def register_page():
+        from models import User
+        
         if request.method == "POST":
             data = request.form
             name = data.get("name", "").strip()
             employee_id = data.get("employee_id", "").strip()
+            machine_id = data.get("machine_id", "").strip()
             password = data.get("password", "")
             role = data.get("role", "Operator")
             assigned = data.getlist("assigned_checklists")
             
-            if not name or not employee_id or not password:
+            if not name or not employee_id or not machine_id or not password:
                 return render_template("register.html", error="All fields required")
             
-            result = app.user_service.create_user(
-                name, employee_id, password, role, assigned
+            # Check if user exists in database
+            existing = User.query.filter_by(employee_id=employee_id).first()
+            if existing:
+                return render_template("register.html", error="Employee ID already exists")
+            
+            # Create new user in database
+            password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+            new_user = User(
+                name=name,
+                employee_id=employee_id,
+                machine_id=machine_id,
+                password_hash=password_hash,
+                role=role,
+                assigned_checklists=json.dumps(assigned)
             )
             
-            if result:
+            try:
+                db.session.add(new_user)
+                db.session.commit()
                 return render_template("register.html", success="Registered successfully!")
-            else:
-                return render_template("register.html", error="Employee ID already exists")
+            except Exception as e:
+                logger.error(f"Registration error: {e}")
+                return render_template("register.html", error="Registration failed")
         
         return render_template("register.html")
     
     @app.route("/api/register", methods=["POST"])
     def api_register():
         """API endpoint for registration."""
+        from models import User
+        
         data = request.get_json(silent=True)
         if not data:
             return jsonify({"error": "Invalid request"}), 400
         
         name = data.get("name", "").strip()
         employee_id = data.get("employee_id", "").strip()
+        machine_id = data.get("machine_id", "").strip()
         password = data.get("password", "")
         role = data.get("role", "Operator")
         assigned_checklists = data.get("assigned_checklists", [])
         
-        if not name or not employee_id or not password:
-            return jsonify({"error": "Name, Employee ID, and password are required"}), 400
+        if not name or not employee_id or not machine_id or not password:
+            return jsonify({"error": "Name, Employee ID, Machine ID, and password are required"}), 400
         
-        result = app.user_service.create_user(
-            name, employee_id, password, role, assigned_checklists
+        # Check if user exists in database
+        existing = User.query.filter_by(employee_id=employee_id).first()
+        if existing:
+            return jsonify({"error": "Employee ID already exists"}), 400
+        
+        # Create new user in database
+        password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+        new_user = User(
+            name=name,
+            employee_id=employee_id,
+            machine_id=machine_id,
+            password_hash=password_hash,
+            role=role,
+            assigned_checklists=json.dumps(assigned_checklists)
         )
         
-        if result:
+        try:
+            db.session.add(new_user)
+            db.session.commit()
             return jsonify({
                 "message": "Registration successful",
                 "employee_id": employee_id
             })
-        return jsonify({"error": "Employee ID already exists"}), 400
+        except Exception as e:
+            logger.error(f"Registration error: {e}")
+            return jsonify({"error": "Registration failed"}), 500
     
     @app.route("/admin")
     @login_required
@@ -272,6 +354,8 @@ def register_routes(app, bcrypt):
     @app.route("/api/checklists/<slug>/save", methods=["POST"])
     @login_required
     def save_checklist(slug: str):
+        from models import Submission
+        
         entry = app.checklist_service.get_checklist_by_slug(slug)
         if not entry:
             return jsonify({"error": "Checklist not found"}), 404
@@ -285,17 +369,39 @@ def register_routes(app, bcrypt):
         
         operator_name = session.get("user", {}).get("name", "Unknown")
         operator_id = session.get("user", {}).get("employee_id", "Unknown")
+        machine_id = session.get("user", {}).get("machine_id", "Unknown")
         
         success, error, saved_data = app.submission_service.save_submission(
             slug=slug,
             category=entry.get("category", "General Checklist"),
             payload=payload,
             operator_name=operator_name,
-            operator_id=operator_id
+            operator_id=operator_id,
+            machine_id=machine_id
         )
         
         if not success:
             return jsonify({"error": f"Failed to save: {error}"}), 500
+        
+        # Save to database
+        try:
+            shift = payload.get("metadata", {}).get("shift", "no_shift")
+            db_submission = Submission(
+                slug=slug,
+                category=entry.get("category", "General Checklist"),
+                operator_name=operator_name,
+                operator_id=operator_id,
+                machine_id=machine_id,
+                batch_no=saved_data.get("batch", "B001") if saved_data else "B001",
+                checklist_no=saved_data.get("sequence", 1) if saved_data else 1,
+                shift=shift,
+                payload=json.dumps(payload),
+                verify_status="Pending"
+            )
+            db.session.add(db_submission)
+            db.session.commit()
+        except Exception as e:
+            logger.error(f"Database save error: {e}")
         
         response = {
             "message": "Checklist saved successfully.",
@@ -312,6 +418,14 @@ def register_routes(app, bcrypt):
     @app.route("/api/supervisor/pending")
     def get_pending_submissions():
         return jsonify(app.submission_service.get_pending_submissions())
+    
+    @app.route("/api/submissions")
+    @login_required
+    def get_db_submissions():
+        """Get all submissions from database."""
+        from models import Submission
+        submissions = Submission.query.order_by(Submission.created_at.desc()).all()
+        return jsonify([s.to_dict() for s in submissions])
     
     @app.route("/api/supervisor/preview/<batch_id>/<slug>")
     @login_required

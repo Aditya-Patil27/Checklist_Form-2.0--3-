@@ -195,7 +195,8 @@ class TestSubmissionService:
             category="Test",
             payload=payload,
             operator_name="Test User",
-            operator_id="TEST001"
+            operator_id="TEST001",
+            machine_id="MACH001"
         )
         
         assert success is True

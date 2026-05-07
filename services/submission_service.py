@@ -18,7 +18,7 @@ class SubmissionService:
         self._processor = processor_module
     
     def save_submission(self, slug: str, category: str, payload: dict,
-                       operator_name: str, operator_id: str) -> tuple[bool, str, Optional[dict]]:
+                       operator_name: str, operator_id: str, machine_id: str = None) -> tuple[bool, str, Optional[dict]]:
         """
         Save a checklist submission.
         
@@ -48,18 +48,19 @@ class SubmissionService:
             sanitized_shift = self._sanitize_filename_part(shift, "no_shift").upper()
             sanitized_operator = self._sanitize_filename_part(operator_name, "unknown")
             timestamp = saved_at.strftime("%Y%m%d_%H%M%S")
-            
+             
             filename = f"B{batch_no:03d}_({checklist_no})_{slug}_{sanitized_shift}_{sanitized_operator}_{timestamp}.json"
-            
+             
             # Add operator info to payload
             if "summary" not in payload:
                 payload["summary"] = {}
-            
+             
             payload["summary"]["set_up_done_by"] = operator_name
             payload["summary"]["set_up_done_by_oe"] = f"{operator_name} ({operator_id})"
+            payload["summary"]["machine_id"] = machine_id if machine_id else "Unknown"
             payload["summary"]["submit_time"] = saved_at.strftime("%Y-%m-%d %H:%M:%S")
             payload["summary"]["verify_status"] = "Pending"
-            
+             
             # Auto-fill date if not provided
             if "metadata" in payload and not payload["metadata"].get("date"):
                 payload["metadata"]["date"] = saved_at.strftime("%Y-%m-%d")
